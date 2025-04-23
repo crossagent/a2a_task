@@ -13,122 +13,86 @@ Relevant ADK Classes:
 - google.adk.events.EventActions: Using `escalate=True` to request user input.
 """
 
-from google.adk.agents import LoopAgent, Agent
+from google.adk.agents import LoopAgent, Agent, LlmAgent
 from google.adk.sessions import Session
 from google.adk.events import Event, EventActions
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
-# Placeholder for the Detail Collector Loop Agent definition
+# Import creator functions for sub-agents
+from src.agents.executors.data_collector import create_data_collector_agent
 
-class DetailCollectorLoop(LoopAgent):
-    """
-    Manages an interactive loop to collect task details.
-
-    Coordinates a sub-agent to ask targeted questions until sufficient
-    information is gathered, using session state to track progress.
-    """
-    def __init__(
-        self,
-        name: str = "DetailCollectorLoop",
-        description: str = "Interactively collects necessary task details from the user.",
-        sub_agent: Optional[Agent] = None, # Agent that generates questions/processes answers
-        state_keys_to_check: Optional[list[str]] = None, # Keys in state indicating completeness
-        max_loops: int = 5, # Prevent infinite loops
-        **kwargs
-    ):
-        super().__init__(name=name, description=description, sub_agent=sub_agent, **kwargs)
-        self._state_keys_to_check = state_keys_to_check or []
-        self._max_loops = max_loops
-        self._loop_count = 0
-
-    async def _should_loop(self, last_event: Event, session: Session) -> bool:
-        """Determine if the loop should continue."""
-        self._loop_count += 1
-        if self._loop_count > self._max_loops:
-            print(f"[{self.name}] Max loops ({self._max_loops}) reached. Exiting loop.")
-            # TODO: Potentially set a state flag indicating incomplete collection
-            session.state["temp:detail_collection_status"] = "max_loops_reached"
-            return False
-
-        # Check if required state keys are present and non-empty
-        if self._state_keys_to_check:
-            all_present = True
-            for key in self._state_keys_to_check:
-                if not session.state.get(key): # Check if key exists and has a value
-                    print(f"[{self.name}] State key '{key}' missing or empty. Continuing loop.")
-                    all_present = False
-                    break
-            if all_present:
-                print(f"[{self.name}] All required state keys present. Exiting loop.")
-                session.state["temp:detail_collection_status"] = "complete"
-                return False
-        else:
-            # If no keys specified, maybe rely on sub-agent signal or user input?
-            # For now, loop until max_loops if no keys are defined.
-            print(f"[{self.name}] No state keys to check defined. Continuing loop (count: {self._loop_count}).")
-
-        # Default: continue looping if conditions above aren't met
-        return True
-
-    async def _prepare_loop_turn(self, last_event: Event, session: Session) -> Optional[EventActions]:
-        """Prepare actions for the next loop iteration (e.g., ask user)."""
-        print(f"[{self.name}] Preparing loop turn {self._loop_count}.")
-        # This is where the sub-agent would typically be invoked to generate
-        # the next question based on the current state.
-        # For this placeholder, we might just signal escalation to get input.
-        # In a real implementation, the sub-agent's response would form the content.
-
-        # Placeholder: Assume we always need user input in this basic loop
-        # A real implementation would involve running the sub_agent here.
-        print(f"[{self.name}] Escalating to request user input for missing details.")
-        return EventActions(escalate=True) # Request user input via Orchestrator
-
-    async def _process_loop_result(self, loop_event: Event, session: Session) -> None:
-        """Process the result of the loop turn (e.g., user's answer)."""
-        print(f"[{self.name}] Processing loop result.")
-        # This is where the sub-agent would process the user's response (loop_event.content)
-        # and update the session state accordingly.
-        if loop_event.content and loop_event.content.parts:
-            user_response = loop_event.content.parts[0].text
-            print(f"[{self.name}] Received user response: '{user_response[:100]}...'")
-            # TODO: Implement logic to parse response and update state keys
-            # Example: session.state['collected_detail_X'] = parsed_value
-            session.state[f"temp:last_user_response_in_loop_{self._loop_count}"] = user_response # Store raw response temporarily
-        else:
-            print(f"[{self.name}] No content found in loop event.")
-
+# Constants for state keys
+STATE_TASK_DETAILS = "task_details"
+STATE_TASK_COMPLETENESS = "task_completeness"
 
 def create_detail_collector_loop(
-    sub_agent: Agent, # The agent doing the asking/processing
-    state_keys_to_check: list[str],
-    max_loops: int = 5
-) -> DetailCollectorLoop:
+    collector_model: str = "gemini-2.0-flash",
+    expert_model: str = "gemini-2.0-flash",
+    max_iterations: int = 5,
+    task_details_key: str = STATE_TASK_DETAILS,
+    completeness_key: str = STATE_TASK_COMPLETENESS,
+    state_keys_to_check: Optional[list[str]] = None
+) -> LoopAgent:
     """
-    Factory function to create the Detail Collector Loop Agent.
+    Factory function to create a Detail Collector Loop Agent.
 
     Args:
-        sub_agent: The agent responsible for generating questions and processing answers.
+        collector_model: Model name for the data collector agent.
+        expert_model: Model name for the expert validation agent.
+        max_iterations: Maximum number of interaction loops allowed.
+        task_details_key: State key for storing collected task details.
+        completeness_key: State key for storing task completeness assessment.
         state_keys_to_check: List of keys in session state that indicate completion.
-        max_loops: Maximum number of interaction loops allowed.
 
     Returns:
-        An instance of DetailCollectorLoop.
+        An instance of LoopAgent configured for detail collection.
     """
-    loop_agent = DetailCollectorLoop(
-        sub_agent=sub_agent,
-        state_keys_to_check=state_keys_to_check,
-        max_loops=max_loops
+    # Create the data collector agent internally
+    data_collector_agent = create_data_collector_agent(
+        model_name=collector_model,
+        # Can add tools if needed
+        # output_key is typically set within the agent's own creation
     )
-    print(f"Detail Collector Loop Agent created, checking keys: {state_keys_to_check}")
+    
+    # Initialize empty sub-agents list
+    sub_agents = []
+    
+    # Add data collector agent
+    sub_agents.append(data_collector_agent)
+    
+    # Create expert agent if expert_model is provided
+    # Note: We would need to import create_expert_agent if we implement this
+    # if expert_model:
+    #     from src.agents.critics.expert import create_expert_agent
+    #     expert_agent = create_expert_agent(
+    #         model_name=expert_model,
+    #         expertise_area="task information completeness"
+    #     )
+    #     sub_agents.append(expert_agent)
+    
+    # Create the loop agent using the LoopAgent class
+    loop_agent = LoopAgent(
+        name="DetailCollectorLoop",
+        description="Interactively collects necessary task details from the user.",
+        sub_agents=sub_agents,
+        max_iterations=max_iterations
+    )
+    
+    print(f"Detail Collector Loop Agent created with {len(sub_agents)} sub-agents")
+    print(f"Using {collector_model} model for data collector agent")
+    if state_keys_to_check:
+        print(f"Loop will check for completion of these state keys: {state_keys_to_check}")
+    
     return loop_agent
 
 # --- Example Usage (for testing) ---
 # if __name__ == '__main__':
-#     # Need a dummy sub-agent
-#     dummy_questioner = Agent(name="Questioner", description="Asks questions.")
-#     loop = create_detail_collector_loop(
-#         sub_agent=dummy_questioner,
-#         state_keys_to_check=["task_deadline", "task_priority"]
+#     # Create the loop agent directly (no need to create sub-agents separately)
+#     detail_loop = create_detail_collector_loop(
+#         collector_model="gemini-2.0-flash",
+#         expert_model="gemini-2.0-flash",  
+#         state_keys_to_check=["task_deadline", "task_priority"],
+#         max_iterations=3
 #     )
-#     # Add test code here, simulating running the loop via a Runner
-#     pass
+#     
+#     # In a real application, the orchestrator would run this loop agent

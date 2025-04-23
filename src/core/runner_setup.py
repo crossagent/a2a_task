@@ -10,12 +10,12 @@ Relevant ADK Classes:
 """
 
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService, SessionService
+from google.adk.sessions import InMemorySessionService, BaseSessionService
 from google.adk.agents import Agent
 
 # Placeholder for SessionService instance (defaulting to InMemory)
 # TODO: Allow configuration for different SessionService types (Database, VertexAI)
-session_service: SessionService = InMemorySessionService()
+session_service: BaseSessionService = InMemorySessionService()
 
 def setup_runner(root_agent: Agent, app_name: str) -> Runner:
     """
