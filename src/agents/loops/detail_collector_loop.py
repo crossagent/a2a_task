@@ -13,13 +13,13 @@ Relevant ADK Classes:
 - google.adk.events.EventActions: Using `escalate=True` to request user input.
 """
 
-from google.adk.agents import LoopAgent, Agent, LlmAgent
-from google.adk.sessions import Session
-from google.adk.events import Event, EventActions
-from typing import Optional, Dict, Any, List
+from google.adk.agents import LoopAgent
+from google.adk.events import EventActions
+from typing import Optional
 
 # Import creator functions for sub-agents
 from src.agents.executors.data_collector import create_data_collector_agent
+from src.agents.critics.data_collection_critic import create_data_collection_critic_agent
 
 # Constants for state keys
 STATE_TASK_DETAILS = "task_details"
@@ -27,7 +27,7 @@ STATE_TASK_COMPLETENESS = "task_completeness"
 
 def create_detail_collector_loop(
     collector_model: str = "gemini-2.0-flash",
-    expert_model: str = "gemini-2.0-flash",
+    critic_model: str = "gemini-2.0-flash",
     max_iterations: int = 5,
     task_details_key: str = STATE_TASK_DETAILS,
     completeness_key: str = STATE_TASK_COMPLETENESS,
@@ -38,7 +38,7 @@ def create_detail_collector_loop(
 
     Args:
         collector_model: Model name for the data collector agent.
-        expert_model: Model name for the expert validation agent.
+        critic_model: Model name for the critic validation agent.
         max_iterations: Maximum number of interaction loops allowed.
         task_details_key: State key for storing collected task details.
         completeness_key: State key for storing task completeness assessment.
@@ -60,15 +60,14 @@ def create_detail_collector_loop(
     # Add data collector agent
     sub_agents.append(data_collector_agent)
     
-    # Create expert agent if expert_model is provided
-    # Note: We would need to import create_expert_agent if we implement this
-    # if expert_model:
-    #     from src.agents.critics.expert import create_expert_agent
-    #     expert_agent = create_expert_agent(
-    #         model_name=expert_model,
-    #         expertise_area="task information completeness"
-    #     )
-    #     sub_agents.append(expert_agent)
+    # Create expert agent
+    data_collection_critic = create_data_collection_critic_agent(
+        model_name=critic_model,
+        collected_data_key=task_details_key,  # Map to collected data key
+        required_fields_key=completeness_key,  # Map to required fields key
+        output_key="data_collection_feedback"  # Example output key
+    )
+    sub_agents.append(data_collection_critic)
     
     # Create the loop agent using the LoopAgent class
     loop_agent = LoopAgent(
@@ -90,7 +89,7 @@ def create_detail_collector_loop(
 #     # Create the loop agent directly (no need to create sub-agents separately)
 #     detail_loop = create_detail_collector_loop(
 #         collector_model="gemini-2.0-flash",
-#         expert_model="gemini-2.0-flash",  
+#         critic_model="gemini-2.0-flash",  
 #         state_keys_to_check=["task_deadline", "task_priority"],
 #         max_iterations=3
 #     )

@@ -40,7 +40,7 @@ def create_root_agent():
     # 创建循环代理
     detail_loop = create_detail_collector_loop(
         collector_model="gemini-2.0-flash",
-        expert_model="gemini-2.0-flash",
+        critic_model="gemini-2.0-flash",
         max_iterations=5,
         state_keys_to_check=["task_name", "status"]
     )
