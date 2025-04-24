@@ -17,9 +17,7 @@ EVENT_HUMAN_CONFIRMATION_NEEDED = "human_confirmation_needed"
 EVENT_HUMAN_INPUT_NEEDED = "human_input_needed"
 EVENT_HUMAN_RESPONSE_RECEIVED = "human_response_received" # Event type expected from UI/Orchestrator
 
-def request_human_review_generator(
-    critique: Dict[str, str], context: ToolContext
-) -> Generator[Dict[str, Any], None, Dict[str, Any]]:
+def request_human_review_generator(*args, **kwargs):
     """
     Generator function for requesting human review or input based on critique.
 
@@ -35,6 +33,17 @@ def request_human_review_generator(
         A dictionary containing the human's response (e.g.,
         {"decision": "approved"} or {"supplementary_data": {...}}).
     """
+    print(f"Human Interaction Tool: Received args: {args}")
+    print(f"Human Interaction Tool: Received kwargs: {kwargs}")
+
+    # Extract critique and context from kwargs
+    critique = kwargs.get("critique")
+    context = kwargs.get("context")
+
+    if not critique:
+        print("Human Interaction Tool: No critique received. Skipping interaction.")
+        return {"error": "No critique received"}
+
     status = critique.get("status")
     feedback = critique.get("feedback", "No feedback provided.")
     interaction_id = str(uuid.uuid4()) # Unique ID for this interaction
@@ -44,15 +53,16 @@ def request_human_review_generator(
     if status == "complete":
         # Request human confirmation
         print(f"Human Interaction Tool: Requesting confirmation (ID: {interaction_id})")
-        EventActions.emit(
-            type=EVENT_HUMAN_CONFIRMATION_NEEDED,
-            data={
-                "interaction_id": interaction_id,
-                "message": f"Data review complete. Please confirm:\n\n{feedback}",
-                "options": ["Approve", "Reject"] # Example options for UI
-            },
-            context=context,
-        )
+        if context: # Check if context is available
+            EventActions.emit(
+                type=EVENT_HUMAN_CONFIRMATION_NEEDED,
+                data={
+                    "interaction_id": interaction_id,
+                    "message": f"Data review complete. Please confirm:\n\n{feedback}",
+                    "options": ["Approve", "Reject"] # Example options for UI
+                },
+                context=context,
+            )
         yield {"status": "waiting_for_confirmation", "interaction_id": interaction_id}
         print(f"Human Interaction Tool: Waiting for confirmation response (ID: {interaction_id})")
 
@@ -61,29 +71,29 @@ def request_human_review_generator(
         # the EVENT_HUMAN_RESPONSE_RECEIVED event with the user's decision
         # and potentially update the state or trigger the generator's continuation.
         # In a real ADK setup, the framework handles resuming the generator
-        # when the corresponding event is processed. For now, we simulate the return.
-        # The actual mechanism depends on how event handling is implemented.
+        # when the corresponding event is processed.
 
-        # Placeholder: In a real scenario, the framework would resume here
-        # after receiving the EVENT_HUMAN_RESPONSE_RECEIVED event.
-        # We'll simulate receiving an 'approved' response for now.
-        # The actual response would come from the event data.
-        human_decision = "approved" # Simulated response
-        print(f"Human Interaction Tool: Received simulated confirmation response: {human_decision} (ID: {interaction_id})")
-        return {"decision": human_decision} # Return the decision
+        # The generator will be resumed by the framework when the event is received.
+        # The return value will be provided by the framework based on the event data.
+        # We just need to wait.
+
+        # Placeholder return - In a real scenario, the framework would handle the return
+        # after the generator is resumed.
+        return {} # Return an empty dict for now
 
     elif status == "incomplete":
         # Request human input
         print(f"Human Interaction Tool: Requesting supplementary input (ID: {interaction_id})")
-        EventActions.emit(
-            type=EVENT_HUMAN_INPUT_NEEDED,
-            data={
-                "interaction_id": interaction_id,
-                "message": f"Data review found issues. Please provide the missing/corrected information:\n\n{feedback}",
-                # UI might present specific fields based on feedback
-            },
-            context=context,
-        )
+        if context: # Check if context is available
+            EventActions.emit(
+                type=EVENT_HUMAN_INPUT_NEEDED,
+                data={
+                    "interaction_id": interaction_id,
+                    "message": f"Data review found issues. Please provide the missing/corrected information:\n\n{feedback}",
+                    # UI might present specific fields based on feedback
+                },
+                context=context,
+            )
         yield {"status": "waiting_for_input", "interaction_id": interaction_id}
         print(f"Human Interaction Tool: Waiting for supplementary input (ID: {interaction_id})")
 
@@ -91,10 +101,9 @@ def request_human_review_generator(
         # Similar to the confirmation case, waiting for EVENT_HUMAN_RESPONSE_RECEIVED
         # containing the supplementary data.
 
-        # Placeholder simulation
-        supplementary_data = {"deadline": "2025-12-31", "priority": "High"} # Simulated input
-        print(f"Human Interaction Tool: Received simulated supplementary input: {supplementary_data} (ID: {interaction_id})")
-        return {"supplementary_data": supplementary_data} # Return the input data
+        # Placeholder return - In a real scenario, the framework would handle the return
+        # after the generator is resumed.
+        return {} # Return an empty dict for now
 
     else:
         # Invalid status from critique
@@ -105,9 +114,6 @@ def request_human_review_generator(
 # Create the LongRunningFunctionTool instance
 human_review_tool = LongRunningFunctionTool(
     func=request_human_review_generator,
-    name="HumanReviewTool",
-    description="Initiates human interaction for data confirmation or supplementation based on prior critique.",
-    output_key=STATE_HUMAN_RESPONSE # Save the final human response to state
 )
 
 print("Human Interaction Tool (HumanReviewTool) created.")

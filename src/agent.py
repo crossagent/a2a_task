@@ -39,21 +39,21 @@ def create_root_agent():
     
     # 创建循环代理
     detail_loop = create_detail_collector_loop(
-        collector_model="gemini-2.5-flash",
-        critic_model="gemini-2.5-flash",
+        collector_model="gemini-2.0-flash",
+        critic_model="gemini-2.0-flash",
         max_iterations=5,
         state_keys_to_check=["task_name", "status"]
     )
     
     classification_loop = create_classification_loop(
-        classifier_model="gemini-2.5-flash",
-        critic_model="gemini-2.5-flash",
+        classifier_model="gemini-2.0-flash",
+        critic_model="gemini-2.0-flash",
         max_iterations=3,
         state_keys_to_check=["task_type", "task_priority"]
     )
     
     # 创建解析器代理
-    workflow_parser = create_workflow_parser_agent(model_name="gemini-2.5-flash")
+    workflow_parser = create_workflow_parser_agent(model_name="gemini-2.0-flash")
     
     # --- 4. 创建协调器（根代理） ---
     all_sub_agents = [
@@ -65,7 +65,7 @@ def create_root_agent():
     
     orchestrator = create_orchestrator_agent(
         sub_agents=all_sub_agents,
-        model_name="gemini-2.5-flash",
+        model_name="gemini-2.0-flash",
         before_model_cb=default_before_model_cb,
     )
     

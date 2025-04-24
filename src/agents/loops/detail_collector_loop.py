@@ -27,8 +27,8 @@ STATE_TASK_COMPLETENESS = "task_completeness"
 # STATE_DATA_CRITIQUE is now imported
 
 def create_detail_collector_loop(
-    collector_model: str = "gemini-2.5-flash",
-    critic_model: str = "gemini-2.5-flash",
+    collector_model: str = "gemini-2.0-flash",
+    critic_model: str = "gemini-2.0-flash",
     max_iterations: int = 5,
     task_details_key: str = STATE_TASK_DETAILS,
     completeness_key: str = STATE_TASK_COMPLETENESS,
@@ -89,8 +89,8 @@ def create_detail_collector_loop(
 # if __name__ == '__main__':
 #     # Create the loop agent directly (no need to create sub-agents separately)
 #     detail_loop = create_detail_collector_loop(
-#         collector_model="gemini-2.5-flash",
-#         critic_model="gemini-2.5-flash",  
+#         collector_model="gemini-2.0-flash",
+#         critic_model="gemini-2.0-flash",  
 #         state_keys_to_check=["task_deadline", "task_priority"],
 #         max_iterations=3
 #     )

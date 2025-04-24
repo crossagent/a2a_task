@@ -20,7 +20,7 @@ from google.adk.agents import LlmAgent
 # This agent will likely need specific instructions and potentially tools
 # for understanding user input and generating the structured plan.
 
-def create_workflow_parser_agent(model_name: str = "gemini-2.5-flash") -> LlmAgent:
+def create_workflow_parser_agent(model_name: str = "gemini-2.0-flash") -> LlmAgent:
     """
     Factory function to create the Workflow Parser Agent.
 

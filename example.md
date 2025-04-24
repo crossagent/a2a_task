@@ -86,7 +86,7 @@ os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
 # @markdown **Security Note:** It's best practice to manage API keys securely (e.g., using Colab Secrets or environment variables) rather than hardcoding them directly in the notebook. Replace the placeholder strings above.
 Define Model Constants for easier use¶
 
-MODEL_GEMINI_2_0_FLASH = "gemini-2.5-flash"
+MODEL_GEMINI_2_0_FLASH = "gemini-2.0-flash"
 
 # Note: Specific model names might change. Refer to LiteLLM or the model provider's documentation.
 MODEL_GPT_4O = "openai/gpt-4o"

@@ -31,8 +31,8 @@ STATE_CLASSIFICATION_FEEDBACK = "classification_feedback"
 STATE_CLASSIFICATION_CONFIRMED = "classification_confirmed"
 
 def create_classification_loop(
-    classifier_model: str = "gemini-2.5-flash", 
-    critic_model: str = "gemini-2.5-flash",
+    classifier_model: str = "gemini-2.0-flash", 
+    critic_model: str = "gemini-2.0-flash",
     max_iterations: int = 3,
     task_details_key: str = STATE_TASK_DETAILS,
     classification_key: str = STATE_PROPOSED_CLASSIFICATION,

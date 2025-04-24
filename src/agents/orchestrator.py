@@ -18,13 +18,13 @@ Relevant ADK Classes:
 import json
 from typing import List, Optional, Dict, Any
 from google.adk.agents import LlmAgent, Agent
-from google.adk.sessions import Session, ToolContext # Added ToolContext
+from google.adk.sessions import Session
 from google.adk.events import Event
 # TODO: Import WorkflowPlan model when defined
 # from src.models.workflow_plan import WorkflowPlan
 
 # Import the human review tool CLASS and relevant state keys
-from src.tools.human_interaction_tools import HumanReviewTool, STATE_DATA_CRITIQUE, STATE_HUMAN_RESPONSE
+from src.tools.human_interaction_tools import human_review_tool, STATE_DATA_CRITIQUE, STATE_HUMAN_RESPONSE
 from src.agents.critics.data_collection_critic import STATE_COLLECTED_DATA, STATE_DATA_CRITIQUE # Import critic output key
 
 # Placeholder for the Orchestrator Agent definition
@@ -37,7 +37,7 @@ from src.agents.critics.data_collection_critic import STATE_COLLECTED_DATA, STAT
 
 def create_orchestrator_agent(
     sub_agents: List[Agent],
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-2.0-flash",
     # Optional tools can still be passed, but HumanReviewTool is added internally
     extra_tools: Optional[List[Any]] = None,
     before_model_cb: Optional[callable] = None,
@@ -60,9 +60,8 @@ def create_orchestrator_agent(
     Returns:
         An instance of the Orchestrator Agent.
     """
-    # Internally create the HumanReviewTool for final confirmation
-    human_review_tool_instance = HumanReviewTool()
-    tool_name_confirm = human_review_tool_instance.name
+    # Use the imported human_review_tool instance for final confirmation
+    tool_name_confirm = human_review_tool.name
 
     # Define detailed instructions including the human review step
     instructions = f"""
@@ -96,8 +95,8 @@ def create_orchestrator_agent(
     Be precise in reading from and writing to the specified session state keys.
     """
 
-    # Combine internally created tool with any extra tools provided
-    all_tools = [human_review_tool_instance]
+    # Combine the imported human_review_tool with any extra tools provided
+    all_tools = [human_review_tool]
     if extra_tools:
         all_tools.extend(extra_tools)
 
