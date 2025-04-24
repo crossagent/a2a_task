@@ -13,10 +13,15 @@
     *   **实现**: 通常是一个 `LlmAgent`，在流程开始时首先被调用。
 
 2.  **Orchestrator Agent (协调器 / Root Agent)**:
-    *   **职责**: 读取结构化流程计划。**动态地协调和推进**工作流。管理 `Session State`。根据计划委托任务给子 Agent。**关键职责**：处理子 Agent 发出的需要用户交互或指示流程变化的 `Events`（例如 `escalate`），暂停、恢复、循环或调整工作流。
-    *   **输入**: 结构化的流程计划，Session State，来自子 Agent 的 Events。
+    *   **职责**: 读取结构化流程计划。**动态地协调和推进**工作流。管理 `Session State`。根据计划委托任务给子 Agent。**关键职责**：
+        *   处理子 Agent 发出的需要用户交互或指示流程变化的 `Events`（例如 `escalate`）。
+        *   在特定流程节点（如数据收集后）调用 Expert Agent 进行评估。
+        *   **根据评估结果 (如 Critic 的 `status`)，条件性地调用工具 (如 `HumanReviewTool`) 发起人工审核或补充信息流程。**
+        *   处理人工交互工具返回的结果，并根据用户反馈调整流程（继续、重试、停止）。
+        *   暂停、恢复、循环或调整工作流。
+    *   **输入**: 结构化的流程计划，Session State，来自子 Agent 的 Events，来自人工交互工具的结果。
     *   **输出**: 驱动整个流程执行，处理用户交互事件，最终可能汇总结果。
-    *   **实现**: 通常是 ADK 框架中的 **Root Agent**，推荐使用 `LlmAgent` 以获得处理复杂逻辑和事件响应的灵活性。
+    *   **实现**: 通常是 ADK 框架中的 **Root Agent**，推荐使用 `LlmAgent` 以获得处理复杂逻辑、条件判断和事件响应的灵活性。需要具备调用特定工具（如 `HumanReviewTool`）的能力。
 
 3.  **Executor Agents (执行者群体)**:
     *   **职责**: 负责执行流程计划中定义的具体任务环节。通常**职责单一、专业化**（例如，信息收集、数据分类、API 调用）。可能需要通过 `Events` 与用户进行**交互式循环**（如提问-回答）来完成任务。每个 Executor 可能拥有特定的技能 (Tools)。
@@ -30,8 +35,8 @@
         *   **分类审核**: 验证对任务或内容的分类是否合理和准确，例如工作类型、优先级、所属领域等。
         *   **质量保证**: 评估产出内容是否符合特定领域的专业标准。
     *   **输入**: 来自 Orchestrator 的审核任务指令，Session State 中的数据。
-    *   **输出**: 专业审核意见和建议，写入 Session State。可能包括验证结果、改进建议或警告标识。
-    *   **实现**: 通常是 `LlmAgent`，配置有特定领域专业知识的指令集，也可能是经过专门训练的 `CustomAgent`。
+    *   **输出**: 专业审核意见和建议，写入 Session State。**对于数据完整性检查，输出应为结构化数据，包含明确的状态 (`status`: 'complete'/'incomplete') 和具体的反馈 (`feedback`)**。
+    *   **实现**: 通常是 `LlmAgent` (如 `DataCollectionCriticAgent`)，配置有特定领域专业知识的指令集，并被指示输出结构化结果。也可能是经过专门训练的 `CustomAgent`。
 
 ## LoopAgent与用户交互
 
@@ -52,7 +57,37 @@
    * **结束条件**: 用户确认分类正确或经过预定次数的修正后结束
    * **实现**: 可以是独立的`LoopAgent`或由Orchestrator管理的循环流程
 
-这两个循环都通过明确的信息需求和目标引导用户输入，使交互更加高效。用户的输入直接用于补充信息和验证分类，而非简单的"是/否"确认。
+这两个循环都通过明确的信息需求和目标引导用户输入，使交互更加高效。用户的输入直接用于补充信息和验证分类。
+
+## 人工审核与补充流程模式
+
+在流程中引入人工干预，主要分为两种情况：信息补充和最终确认。
+
+**1. Loop 内信息补充 (由 LoopAgent 驱动)**
+
+*   **场景**: 在迭代式信息收集中（如 `DetailCollectorLoop`），Critic Agent (`DataCollectionCriticAgent`) 发现当前信息不足 (`status: 'incomplete'`)。
+*   **流程**:
+    1.  **触发**: `DetailCollectorLoop` 在每次迭代中调用 `DataCollectionCriticAgent`。
+    2.  **评估**: Critic 返回 `status: 'incomplete'` 和 `feedback`。
+    3.  **调用交互工具**: `DetailCollectorLoop` **直接调用** `HumanReviewTool`，传递 `feedback`。
+    4.  **发起交互**: `HumanReviewTool` 发出 `human_input_needed` 事件，并 `yield` 等待。
+    5.  **外部处理与响应**: UI 捕获事件，用户提供补充信息 (`supplementary_data`)，通过 `human_response_received` 事件返回。
+    6.  **工具恢复与返回**: `HumanReviewTool` 恢复，返回包含 `supplementary_data` 的响应。
+    7.  **Loop 处理**: `DetailCollectorLoop` 接收响应，将 `supplementary_data` 合并到 Session State，然后继续下一次循环迭代，利用更新后的信息。
+*   **关键点**: 信息补充发生在循环内部，允许在后续迭代中利用补充的数据，提高收集效率和质量。
+
+**2. Orchestrator 驱动的最终确认 (由 OrchestratorAgent 驱动)**
+
+*   **场景**: 在一个关键阶段（如 `DetailCollectorLoop`）成功完成后，需要对最终结果进行人工确认，才能进入下一个主要步骤（如写入 Notion）。
+*   **流程**:
+    1.  **触发**: `DetailCollectorLoop` 成功结束（例如，Critic 最终返回 `status: 'complete'`）。
+    2.  **Orchestrator 判断**: `OrchestratorAgent` 读取最终的 `critique` 或其他状态，判断是否需要最终确认。
+    3.  **调用交互工具**: Orchestrator 调用 `HumanReviewTool`，可能传递需要确认的数据摘要。
+    4.  **发起交互**: `HumanReviewTool` 发出 `human_confirmation_needed` 事件，并 `yield` 等待。
+    5.  **外部处理与响应**: UI 捕获事件，用户做出决定 (`decision: 'approved'/'rejected'`)，通过 `human_response_received` 事件返回。
+    6.  **工具恢复与返回**: `HumanReviewTool` 恢复，返回包含 `decision` 的响应。
+    7.  **Orchestrator 处理**: Orchestrator 接收响应，根据 `decision` 决定是继续执行后续流程（如 `NotionWriterAgent`）还是采取其他行动（如停止、请求澄清）。
+*   **关键点**: 最终确认发生在阶段性任务成功完成后，由 Orchestrator 控制流程走向。
 
 ## 使用 Callbacks 进行格式检查
 
@@ -90,50 +125,62 @@
 6.  **NotionWriterAgent (`CustomAgent`)**:
     *   调用 `add_to_notion` Tool，将最终经过专家验证的任务信息写入 Notion。
 
-### Notion 任务助手流程交互示意图
+### Notion 任务助手流程交互示意图 (修订版：包含 Loop 内补充和 Orchestrator 确认)
 
 ```mermaid
 graph TD
     A[User: Initial Request] --> B(Workflow Parser);
     B -- Fixed Plan --> C{Orchestrator (Root - LlmAgent)};
 
-    subgraph Step 1: Collect Details (Loop)
-        C -- Delegate --> L1{TaskDetailLoop};
-        L1 --> D(Exec: TaskDetailCollector);
-        D -- Analysis Result --> Status1{Details Complete?};
-        Status1 -- No --> NeedInput1[Generate Specific Question];
-        NeedInput1 -- Event: Ask User --> UI1[User Interface];
-        UI1 -- Event: User Answer --> L1;
-        Status1 -- Yes --> L1End{Loop End};
-        L1End -- Collected Details --> S[(Session State)];
+    subgraph Step 1: Collect Details (DetailCollectorLoop)
+        direction LR
+        C -- Delegate --> StartLoop[开始循环];
+        StartLoop --> CallCollector(调用 DataCollectorAgent);
+        CallCollector --> CallCritic(调用 DataCollectionCriticAgent);
+        CallCritic --> CheckCritique{检查 Critique Status?};
+
+        subgraph Human Input Inside Loop (if incomplete)
+            CheckCritique -- 'incomplete' --> CallHumanInput[Loop 调用 HumanReviewTool (补充)];
+            CallHumanInput -- Event: human_input_needed --> UI_Input[UI: 请求补充信息];
+            UI_Input -- Event: human_response_received (supplementary_data) --> CallHumanInput;
+            CallHumanInput -- 返回补充数据 --> MergeData(Loop 合并补充数据);
+            MergeData --> CheckLoopEnd{循环结束?};
+        end
+
+        CheckCritique -- 'complete' --> CheckLoopEnd;
+        CheckLoopEnd -- 未结束 --> CallCollector;
+        CheckLoopEnd -- 结束 (最终状态: complete) --> EndLoop[循环成功结束];
+        EndLoop -- Final Collected Details & Critique --> S[(Session State)];
     end
 
-    subgraph Step 2: Classify Task (Loop)
-        C -- Delegate --> L2{TaskClassificationLoop};
-        L2 --> F(Exec: TaskClassifier);
-        F -- Classification with Rationale --> UI2[User Interface];
-        UI2 -- Event: User Feedback/Adjustment --> F;
-        F -- Final Classification --> L2End{Loop End};
-        L2End -- Confirmed Classification --> S;
+    subgraph Step 2: Orchestrator Requests Final Confirmation (if loop successful)
+        C -- Reads Final State --> S;
+        C -- Loop Successful? --> CondConfirm{需要最终确认?};
+        CondConfirm -- Yes --> C_CallConfirmTool(Orchestrator 调用 HumanReviewTool (确认));
+        C_CallConfirmTool -- Event: human_confirmation_needed --> UI_Confirm[UI: 请求最终确认];
+        UI_Confirm -- Event: human_response_received (decision) --> C_CallConfirmTool;
+        C_CallConfirmTool -- 返回 decision --> C_ProcessConfirm(Orchestrator 处理确认结果);
+        C_ProcessConfirm -- Decision: Approved --> C_Approved;
+        C_ProcessConfirm -- Decision: Rejected --> C_Rejected(Orchestrator 处理拒绝);
+        CondConfirm -- No --> C_Approved; #直接进入下一步
     end
 
-    subgraph Step 3: Expert Validation
-        C -- Delegate (using Collected Data) --> K(Expert: TaskExpertAgent);
-        K -- Reads Data --> S;
-        K -- Professional Assessment --> K;
-        K -- Validation Results & Recommendations --> S;
-    end
-
-     subgraph Step 4: Write to Notion
-        C -- Delegate (using Validated Data) --> H(Exec: NotionWriter);
-        H -- Reads Validated Data --> S;
+    subgraph Step 3: Write to Notion (if approved)
+        C_Approved --> C_DelegateWrite(Orchestrator 委托写入);
+        C_DelegateWrite --> H(Exec: NotionWriter);
+        H -- Reads Final Data --> S;
         H -- Call Tool --> I[Tool: add_to_notion];
         I -- Notion API --> J[(Notion Database)];
         I -- Result --> H;
-        H -- Completion --> C;
-     end
+        H -- Completion --> C_WriteDone(写入完成);
+    end
 
-    C -- Final Status --> UI3[User Interface];
+    C_WriteDone --> FinalStatus[最终状态];
+    C_Rejected --> FinalStatus;
+    # 其他步骤如分类、专家验证等可按需插入
+
+    style CallHumanInput fill:#f9f,stroke:#333,stroke-width:2px
+    style C_CallConfirmTool fill:#ccf,stroke:#333,stroke-width:2px
 ```
 
 ## 设计原则

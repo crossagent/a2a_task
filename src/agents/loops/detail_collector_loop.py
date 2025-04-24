@@ -19,11 +19,12 @@ from typing import Optional
 
 # Import creator functions for sub-agents
 from src.agents.executors.data_collector import create_data_collector_agent
-from src.agents.critics.data_collection_critic import create_data_collection_critic_agent
+from src.agents.critics.data_collection_critic import create_data_collection_critic_agent, STATE_DATA_CRITIQUE # Import the constant
 
 # Constants for state keys
 STATE_TASK_DETAILS = "task_details"
 STATE_TASK_COMPLETENESS = "task_completeness"
+# STATE_DATA_CRITIQUE is now imported
 
 def create_detail_collector_loop(
     collector_model: str = "gemini-2.0-flash",
@@ -65,7 +66,7 @@ def create_detail_collector_loop(
         model_name=critic_model,
         collected_data_key=task_details_key,  # Map to collected data key
         required_fields_key=completeness_key,  # Map to required fields key
-        output_key="data_collection_feedback"  # Example output key
+        output_key=STATE_DATA_CRITIQUE # Using the constant defined earlier
     )
     sub_agents.append(data_collection_critic)
     

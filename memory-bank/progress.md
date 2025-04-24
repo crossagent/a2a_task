@@ -9,14 +9,28 @@
     *   设计了核心的 Agent 团队架构 (Parser, Orchestrator, Executors, Expert)。
     *   明确了使用 Callbacks 进行格式检查的机制。
     *   初始化了 Memory Bank 的核心文档 (`projectbrief.md`, `productContext.md`, `systemPatterns.md`, `techContext.md`, `activeContext.md`, `progress.md`)。
+    *   **实现了人工审核流程的核心代码**:
+        *   修改 `DataCollectionCriticAgent` 输出结构化 JSON (`status`, `feedback`)。
+        *   创建了 `HumanReviewTool` (基于 `LongRunningFunctionTool` 和 Events) 用于处理人工交互。
+        *   (旧) 更新了 `OrchestratorAgent` 指令以协调 Critic 和 `HumanReviewTool` 的调用（此逻辑已修订）。
+    *   **修订并更新了人工审核流程文档 (2025-04-24)**:
+        *   更新 `memory-bank/systemPatterns.md`：区分了 Loop 内信息补充和 Orchestrator 最终确认两种模式，并更新了流程图。
+        *   更新 `memory-bank/activeContext.md`：反映了修订后的流程决策和下一步编码计划。
+        *   更新 `memory-bank/progress.md`：记录文档更新情况。
 
 ## 下一步工作 (To-Do)
 
-*   **细化工作流示例**: 选择 1-2 个具体的工作流程（例如，“生成市场分析报告”、“处理客户反馈”），详细设计其步骤、涉及的 Agent、Tools、状态传递和审核点。
-*   **设计 Workflow Parser**: 深入研究如何将自然语言流程描述转化为结构化的执行计划。探索所需的技术（提示工程、模型选择、可能的结构化输出格式）。
-*   **定义核心 Tools**: 为选定的工作流示例，初步定义 Executor 和 Expert Agent 所需的核心 Tools (Python 函数原型和 Docstrings)。
-*   **MCP 服务集成**: 调研用户提到的 MCP 服务，并思考如何将其集成到 Agent 的 Tools 或整体架构中。
-*   **原型搭建**: (远期) 基于 ADK 搭建一个简单的原型，实现一个基础的工作流。
+*   **修改 `DetailCollectorLoop` (`src/agents/loops/detail_collector_loop.py`)**: 实现循环内部调用 `HumanReviewTool` 进行信息补充的逻辑，处理返回的补充数据。
+*   **修改 `OrchestratorAgent` (`src/agents/orchestrator.py`)**: 调整逻辑，使其仅在 `DetailCollectorLoop` 成功完成后处理最终确认步骤。
+*   **定义/修改工作流计划 (`workflow_plan`)**: 在计划中明确反映 Loop 内补充和 Orchestrator 最终确认的流程顺序。
+*   **实现事件处理与 UI/外部交互**: 开发监听 `human_confirmation_needed` 和 `human_input_needed` 事件、呈现信息给用户、捕获响应的机制。
+*   **实现用户响应传递**: 将用户响应（补充数据或确认决定）通过 `human_response_received` 事件传递回 ADK 框架，以恢复 `HumanReviewTool`。
+*   **测试端到端流程**: 集成所有部分进行测试。
+*   **(原有) 细化工作流示例**: 选择 1-2 个具体的工作流程，详细设计其步骤。
+*   **(原有) 设计 Workflow Parser**: 深入研究 NLU 到结构化计划的转换。
+*   **定义核心 Tools**: (继续) 为选定的工作流示例定义 Tools。
+*   **MCP 服务集成**: (继续) 调研并思考集成 MCP 服务。
+*   **原型搭建**: (远期) 基于 ADK 搭建原型。
 
 ## 已知问题与挑战
 
