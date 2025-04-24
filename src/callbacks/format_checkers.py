@@ -106,7 +106,7 @@ def check_tool_input_args(
 # from google.adk.agents import LlmAgent
 # my_agent = LlmAgent(
 #     name="FormattedAgent",
-#     model="gemini-2.0-flash",
+#     model="gemini-2.5-flash",
 #     tools=[some_tool_function],
 #     before_tool_callback=check_tool_input_args,
 #     after_tool_callback=check_tool_output_format,

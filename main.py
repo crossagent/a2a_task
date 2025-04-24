@@ -33,7 +33,7 @@ load_dotenv()
 
 # --- Configuration ---
 APP_NAME = "ai_workflow_automator"
-DEFAULT_MODEL = "gemini-2.0-flash"  # Or choose another like "openai/gpt-4o" if keys are set
+DEFAULT_MODEL = "gemini-2.5-flash"  # Or choose another like "openai/gpt-4o" if keys are set
 
 # 创建 FastAPI 应用
 app = FastAPI(title="AI Workflow Automator API")

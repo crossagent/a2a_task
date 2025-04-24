@@ -118,7 +118,7 @@ def restrict_tool_by_argument_value(
 # from google.adk.agents import LlmAgent
 # secure_agent = LlmAgent(
 #     name="SecureAgent",
-#     model="gemini-2.0-flash",
+#     model="gemini-2.5-flash",
 #     tools=[some_tool, delete_item_tool, expensive_api_call_tool],
 #     before_model_callback=block_sensitive_keywords_in_input,
 #     before_tool_callback=restrict_tool_by_argument_value,

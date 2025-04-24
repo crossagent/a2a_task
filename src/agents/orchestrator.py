@@ -37,7 +37,7 @@ from src.agents.critics.data_collection_critic import STATE_COLLECTED_DATA, STAT
 
 def create_orchestrator_agent(
     sub_agents: List[Agent],
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     # Optional tools can still be passed, but HumanReviewTool is added internally
     extra_tools: Optional[List[Any]] = None,
     before_model_cb: Optional[callable] = None,

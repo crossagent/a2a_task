@@ -20,7 +20,7 @@ from typing import List, Optional, Callable
 
 def create_notion_writer_agent(
     notion_tools: List[Callable], # Expects tools like add_to_notion_database
-    model_name: str = "gemini-2.0-flash", # Only used if LlmAgent is chosen
+    model_name: str = "gemini-2.5-flash", # Only used if LlmAgent is chosen
     use_llm: bool = False, # Set to True if formatting/reasoning needed
     before_tool_cb: Optional[callable] = None, # e.g., Input format check
     after_tool_cb: Optional[callable] = None,

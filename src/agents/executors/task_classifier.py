@@ -22,7 +22,7 @@ STATE_PROPOSED_CLASSIFICATION = "proposed_classification"
 STATE_CLASSIFICATION_FEEDBACK = "classification_feedback"
 
 def create_task_classifier_agent(
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     tools: Optional[List[Callable]] = None,
     task_details_key: str = STATE_TASK_DETAILS,
     output_key: str = STATE_PROPOSED_CLASSIFICATION,

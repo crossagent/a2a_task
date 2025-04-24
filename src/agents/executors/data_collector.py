@@ -22,7 +22,7 @@ from typing import Optional
 # existing state to determine what's missing.
 
 def create_data_collector_agent(
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     tools: Optional[list] = None,
     before_tool_cb: Optional[callable] = None,
     after_tool_cb: Optional[callable] = None,

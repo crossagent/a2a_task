@@ -29,7 +29,7 @@ STATE_DATA_CRITIQUE = "data_collection_critique" # Renamed for clarity
 STATE_REQUIRED_FIELDS = "required_data_fields"
 
 def create_data_collection_critic_agent(
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     collected_data_key: str = STATE_COLLECTED_DATA,
     required_fields_key: str = STATE_REQUIRED_FIELDS,
     output_key: str = STATE_DATA_CRITIQUE, # Updated default output key

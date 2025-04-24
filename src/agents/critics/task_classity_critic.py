@@ -22,7 +22,7 @@ STATE_CLASSIFICATION_FEEDBACK = "classification_feedback"
 STATE_TASK_DETAILS = "task_details"
 
 def create_classification_critic_agent(
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     proposed_classification_key: str = STATE_PROPOSED_CLASSIFICATION,
     task_details_key: str = STATE_TASK_DETAILS,
     output_key: str = STATE_CLASSIFICATION_FEEDBACK
