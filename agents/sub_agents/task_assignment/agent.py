@@ -6,12 +6,12 @@ from google.adk.tools import ToolContext
 from . import prompts
 
 # 导入Notion工具函数
-from ....tools.notion_tool import get_notion_database_properties, find_notion_project, create_notion_task
+from agents.tools.notion_tool import get_notion_database_properties, find_notion_project, create_notion_task
 
 # 定义Agent 2 (任务分配代理)
 task_assignment_agent = Agent(
     # 配置模型
-    model=os.getenv("ADK_AGENT_MODEL"), # 假设使用通用模型环境变量
+    model=os.getenv("ADK_AGENT_MODEL", 'gemini-2.0-flash-001'), # 假设使用通用模型环境变量
     name="task_assignment_agent",
     description="该代理接收任务详情并使用Notion工具在Notion中创建任务。",
     # 使用从prompts模块导入的指令

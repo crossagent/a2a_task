@@ -23,8 +23,8 @@ from google.adk.agents import LiveRequestQueue
 from google.adk.agents.run_config import RunConfig
 
 # 导入自定义组件
-from src.core.runner_setup import setup_runner, session_service
-from src.agent import root_agent
+from agents.core.runner_setup import setup_runner, session_service
+from agents.agent import root_agent
 # TODO: Import WorkflowPlan model when needed
 # from src.models.workflow_plan import WorkflowPlan, WorkflowStep
 
