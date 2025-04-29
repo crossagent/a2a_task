@@ -11,7 +11,7 @@ from agents.sub_agents.task_definition.agent import task_definition_agent
 from agents.sub_agents.task_assignment.agent import task_assignment_agent
 
 # 导入Notion工具
-from agents.tools.notion_tool import get_notion_database_properties, find_notion_project
+from agents.tools.notion_tool import get_notion_database_schema, find_notion_project
 
 # 定义Root Agent (任务管理代理)
 root_agent = Agent(
@@ -22,5 +22,5 @@ root_agent = Agent(
     # 添加子代理，用于任务定义和任务分配
     sub_agents=[task_definition_agent, task_assignment_agent],
     # 为代理添加Notion工具，用于查询任务
-    tools=[get_notion_database_properties, find_notion_project],
+    tools=[get_notion_database_schema, find_notion_project],
 )

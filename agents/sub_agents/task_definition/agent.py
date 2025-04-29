@@ -10,7 +10,7 @@ from . import prompts
 # from agents.sub_agents.task_assignment.agent import task_assignment_agent
 
 # 导入Notion工具
-from agents.tools.notion_tool import get_notion_database_properties
+from agents.tools.notion_tool import get_notion_database_schema
 
 # TODO: Define any tools used directly by Agent 1 (if any, besides calling Agent 2)
 # For this project, Agent 1 primarily interacts with the user and passes state to Agent 2.
@@ -27,7 +27,7 @@ task_definition_agent = Agent(
     # 添加task_assignment_agent作为子代理
     # sub_agents=[task_assignment_agent],
     # 为代理添加Notion工具，不使用AgentTool以允许多轮对话
-    tools=[get_notion_database_properties],
+    tools=[get_notion_database_schema],
     # TODO: Add callbacks if necessary (e.g., to process user input or state before/after agent call)
     # before_agent_callback=...,
     # after_agent_callback=...,

@@ -6,7 +6,7 @@ from google.adk.tools import ToolContext
 from . import prompts
 
 # 导入Notion工具函数
-from agents.tools.notion_tool import get_notion_database_properties, find_notion_project, create_notion_task
+from agents.tools.notion_tool import get_notion_database_schema, find_notion_project, create_notion_task
 
 # 定义Agent 2 (任务分配代理)
 task_assignment_agent = Agent(
@@ -17,7 +17,7 @@ task_assignment_agent = Agent(
     # 使用从prompts模块导入的指令
     instruction=prompts.TASK_ASSIGNMENT_INSTRUCTION,
     # 添加Agent 2使用的工具
-    tools=[get_notion_database_properties, find_notion_project, create_notion_task],
+    tools=[get_notion_database_schema, find_notion_project, create_notion_task],
     # TODO: 如有需要添加回调函数(例如，在代理调用前/后处理状态)
     # before_agent_callback=...,
     # after_agent_callback=...,
