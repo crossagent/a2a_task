@@ -7,7 +7,7 @@ from typing import TypeAlias
 from . import prompts
 
 # 从task_assignment模块导入task_assignment_agent实例而非整个模块
-# from agents.sub_agents.task_assignment.agent import task_assignment_agent
+from agents.sub_agents.task_assignment.agent import task_assignment_agent
 
 # 导入Notion工具
 from agents.tools.notion_tool import get_notion_database_schema
@@ -25,7 +25,7 @@ task_definition_agent = Agent(
     # 添加指令
     instruction=prompts.TASK_DEFINITION_INSTRUCTION,
     # 添加task_assignment_agent作为子代理
-    # sub_agents=[task_assignment_agent],
+    sub_agents=[task_assignment_agent],
     # 为代理添加Notion工具，不使用AgentTool以允许多轮对话
     tools=[get_notion_database_schema],
     # TODO: Add callbacks if necessary (e.g., to process user input or state before/after agent call)
